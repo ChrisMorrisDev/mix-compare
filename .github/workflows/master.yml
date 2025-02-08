@@ -64,4 +64,4 @@ jobs:
     
     # Deploy to server
     - name: Deploy Files to DO
-      run: rsync -a ./dist/ ${{ secrets.DROPLET_USER }}@${{ secrets.DROPLET_IP }}:${{ secrets.DROPLET_TARGET }}
+      run: rsync -a ./dist/ root@${{ secrets.DROPLET_IP }}:${{ secrets.DROPLET_TARGET }}
