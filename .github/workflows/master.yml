@@ -60,8 +60,8 @@ jobs:
         key: ${{ secrets.DROPLET_SSH_KEY }}
         port: ${{ secrets.DROPLET_SSH_PORT }}
         passphrase: ${{ secrets.DROPLET_SSH_PASSPHRASE }}
-        script: rm -R /var/www/mixcompare.chris-morris.net/public_html/*
+        script: rm -R ${{ secrets.DROPLET_TARGET }}*
     
     # Deploy to server
     - name: Deploy Files to DO
-      run: rsync -a ./dist/ root@${{ secrets.DROPLET_IP }}:${{ secrets.DROPLET_TARGET }}
+      run: rsync -a ./dist/ ${{ secrets.DROPLET_USER }}@${{ secrets.DROPLET_IP }}:${{ secrets.DROPLET_TARGET }}
