@@ -1,0 +1,66 @@
+# Build & Deploy Lethbridgewind.com
+# Author: Chris Morris | chris.morris3@gmail.com
+# https://chris-morris.net
+
+name: Node.js CI
+
+on:
+  push:
+    branches: [ master ]
+
+jobs:
+  build:
+  
+    # Build it on Ubuntu
+    runs-on: ubuntu-latest
+
+    # Clean Installation of Node
+    strategy:
+      matrix:
+        node-version: [22.x]
+
+    steps:
+    - uses: actions/checkout@v2
+    - name: Use Node.js ${{ matrix.node-version }}
+      uses: actions/setup-node@v2
+      with:
+        node-version: ${{ matrix.node-version }}
+        cache: 'npm'
+
+      # Create Environment Variables
+      env:
+          DROPLET_IP: ${{ secrets.DROPLET_IP }}
+          DROPLET_SSH_KEY: ${{ secrets.DROPLET_SSH_KEY }}
+          DROPLET_USER: ${{ secrets.DROPLET_USER }}
+          DROPLET_TARGET: ${{ secrets.DROPLET_TARGET }}
+
+    # Install SSH Key for secure deployment
+    - name: Install SSH Key
+      uses: shimataro/ssh-key-action@v2
+      with:
+        key: ${{ secrets.DROPLET_SSH_KEY }}
+        known_hosts: 'just-a-placeholder-so-we-dont-get-errors'
+
+    # Add Known Hosts
+    - name: Adding Known Hosts
+      run: ssh-keyscan -H ${{ secrets.DROPLET_IP }} >> ~/.ssh/known_hosts
+
+    #Install Dependencies
+    - run: npm ci
+
+    # Build with Parcel
+    - run: npm run build --if-present
+
+    #clear the contents of public_html/
+    - name: Remote SSH Command to clear directory contents
+      uses: appleboy/ssh-action@master
+      with:
+        host: ${{ secrets.DROPLET_IP }}
+        username: ${{ secrets.DROPLET_USER }}
+        key: ${{ secrets.DROPLET_SSH_KEY }}
+        port: ${{ secrets.DROPLET_SSH_PORT }}
+        script: rm -R ${{ secrets.DROPLET_TARGET }}*
+    
+    # Deploy to server
+    - name: Deploy Files to DO
+      run: rsync -a ./dist/ ${{ secrets.DROPLET_USER }}@${{ secrets.DROPLET_IP }}:${{ secrets.DROPLET_TARGET }}
